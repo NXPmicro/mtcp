@@ -60,6 +60,7 @@
 
 #define SEND_MODE 		1
 #define WAIT_MODE		2
+long int bytes_sent   = 0, bytes_got = 0;
 /*----------------------------------------------------------------------------*/
 struct thread_context
 {
@@ -70,6 +71,7 @@ struct thread_context
 void
 SignalHandler(int signum)
 {
+	printf("Total bytes sent: %lu, rec: %lu\n", bytes_sent, bytes_got);
 	ERROR("Received SIGINT");
 	exit(-1);
 }
@@ -108,7 +110,6 @@ main(int argc, char **argv)
 	int sec_to_send;
 	int wrote        = 0,
 		read         = 0,
-		bytes_sent   = 0,
 		events_ready = 0,
 		nevents      = 0,
 		sent_close   = 0;
@@ -237,7 +238,10 @@ main(int argc, char **argv)
 		return -1;
 	}
 
-	ev.events = MTCP_EPOLLIN;
+	if (mode == WAIT_MODE)
+		ev.events = MTCP_EPOLLIN;
+	else
+		ev.events = MTCP_EPOLLOUT;
 	ev.data.sockid = sockfd;
 	mtcp_epoll_ctl(mctx, ep_id, MTCP_EPOLL_CTL_ADD, sockfd, &ev);
 
@@ -274,7 +278,7 @@ main(int argc, char **argv)
 					}
 					mtcp_epoll_ctl(mctx, ep_id, MTCP_EPOLL_CTL_DEL, sockfd, &ev);
 					sockfd = c;
-					ev.events = MTCP_EPOLLIN | MTCP_EPOLLOUT;
+					ev.events = MTCP_EPOLLIN;
 					ev.data.sockid = sockfd;
 					mtcp_epoll_ctl(mctx, ep_id, MTCP_EPOLL_CTL_ADD, sockfd, &ev);
 					goto end_wait_loop;
@@ -301,37 +305,30 @@ end_wait_loop:
 		DEBUG("Connection created.");
 	}
 
-	clock_gettime(CLOCK_MONOTONIC, &ts_start);
-	end_time = ts_start.tv_sec + sec_to_send;
-
-	memset(buf, 0x90, sizeof(char) * BUF_LEN);
 	buf[BUF_LEN-1] = '\0';
 
-	while (1) {
-		wrote = mtcp_write(ctx->mctx, sockfd, buf, BUF_LEN);
-		bytes_sent += wrote;
-		if (wrote > 0) {
-			gettimeofday(&t1, NULL);
-			break;
-		}
-	}
+	int start_timer_set = 0;
 
-	//ev.events = MTCP_EPOLLIN | MTCP_EPOLLOUT;
-	//mtcp_epoll_ctl(mctx, ep_id, MTCP_EPOLL_CTL_ADD, sockfd, &ev);
-	//
-
-    
+	memset(buf, 0x11, sizeof(char) * BUF_LEN);
 	while (1) { // check time
 		events_ready = mtcp_epoll_wait(ctx->mctx, ep_id, events, mcfg.max_num_buffers, -1);
+		if (start_timer_set == 0) {
+			clock_gettime(CLOCK_MONOTONIC, &ts_start);
+			end_time = ts_start.tv_sec + sec_to_send;
+			gettimeofday(&t1, NULL);
+			start_timer_set = 1;
+		}
 		for (int i = 0; i < events_ready; i++) {
-			assert(sockfd == events[i].data.sockid);
 			if (events[i].events & MTCP_EPOLLIN) {
 				read = mtcp_read(ctx->mctx, sockfd, rcvbuf, BUF_LEN);
-				if (read <= 0) {
-					continue;
-				} else {
-					DEBUG("Got FIN-ACK from receiver (%d bytes): %s", read, rcvbuf);
-					goto stop_timer; 
+				if (read > 0) {
+					bytes_got += read;
+					if (rcvbuf[read - 1] == 150) {
+						memset(buf, 0x11, sizeof(char) * BUF_LEN);
+						mtcp_write(ctx->mctx, sockfd, buf, 1);
+						DEBUG("Done reading...  FIN-ACK sent");
+						goto stop_timer;
+					}
 				}
 			} else if (events[i].events == MTCP_EPOLLOUT) {
 				//if (bytes_sent < sec_to_send) {
@@ -345,6 +342,11 @@ end_wait_loop:
 					mtcp_write(ctx->mctx, sockfd, buf, 1);
 					DEBUG("Done writing... waiting for FIN-ACK");  
 					sent_close = 1;
+				} else {
+					read = mtcp_read(ctx->mctx, sockfd, rcvbuf, BUF_LEN);
+					printf("Read bytes = %d\n", read);
+					DEBUG("Got server FIN-ACK from receiver (%d bytes): %s", read, rcvbuf);
+					goto stop_timer;
 				}
 			}
 		}
@@ -362,8 +364,11 @@ stop_timer:
 	elapsed_time = (t2.tv_sec - t1.tv_sec) * 1.0;
 	elapsed_time += (t2.tv_usec - t1.tv_usec) / 1000000.0;
 	printf("Time elapsed: %f\n", elapsed_time);
-	printf("Total bytes sent: %d\n", bytes_sent);
-	printf("Throughput: %.3fMbit/sec\n", ((bytes_sent * 8.0 / 1000000.0) / elapsed_time));
+	printf("Total bytes sent: %lu, rec: %lu\n", bytes_sent, bytes_got);
+	if (mode == SEND_MODE)
+		printf("Throughput: %.3fMbit/sec\n", ((bytes_sent * 8.0 / 1000000.0) / elapsed_time));
+	else
+		printf("Throughput: %.3fMbit/sec\n", ((bytes_got * 8.0 / 1000000.0) / elapsed_time));
 
 	mtcp_destroy_context(ctx->mctx);
 	free(ctx);

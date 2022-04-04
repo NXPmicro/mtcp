@@ -1,8 +1,11 @@
 ### GCC ###
 GCC=@CC@
+host_alias=@host_alias@
 
 ifeq ($(shell uname -m),x86_64)
+ifeq ($(host_alias),)
 GCC_OPT = -m64
+endif
 else
 GCC_OPT =
 endif

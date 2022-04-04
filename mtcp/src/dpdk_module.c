@@ -110,11 +110,6 @@ static struct rte_eth_dev_info dev_info[RTE_MAX_ETHPORTS];
 static struct rte_eth_conf port_conf = {
 	.rxmode = {
 		.mq_mode	= 	ETH_MQ_RX_RSS,
-#if RTE_VERSION < RTE_VERSION_NUM(19, 8, 0, 0)
-		.max_rx_pkt_len = 	ETHER_MAX_LEN,
-#else
-		.max_rx_pkt_len = 	RTE_ETHER_MAX_LEN,
-#endif
 #if RTE_VERSION > RTE_VERSION_NUM(17, 8, 0, 0)
 		.offloads	=	(
 #if RTE_VERSION < RTE_VERSION_NUM(18, 5, 0, 0)
@@ -291,7 +286,7 @@ dpdk_init_handle(struct mtcp_thread_context *ctxt)
 	dpc->fd = open(DEV_PATH, O_RDWR);
 	if (dpc->fd == -1) {
 		TRACE_ERROR("Can't open " DEV_PATH " for context->cpu: %d! "
-			    "Are you using mlx4/mlx5 driver?\n",
+			    "Are you using mlx4/mlx5/dpaax driver?\n",
 			    ctxt->cpu);
 	}
 #endif /* !ENABLE_STATS_IOCTL */
@@ -534,7 +529,7 @@ dpdk_get_rptr(struct mtcp_thread_context *ctxt, int ifidx, int index, uint16_t *
 	dpc->rmbufs[ifidx].m_table[index] = m;
 
 	/* verify checksum values from ol_flags */
-	if ((m->ol_flags & (PKT_RX_L4_CKSUM_BAD | PKT_RX_IP_CKSUM_BAD)) != 0) {
+	if ((m->ol_flags & (RTE_MBUF_F_RX_L4_CKSUM_BAD | RTE_MBUF_F_RX_IP_CKSUM_BAD)) != 0) {
 		TRACE_ERROR("%s(%p, %d, %d): mbuf with invalid checksum: "
 			    "%p(%lu);\n",
 			    __func__, ctxt, ifidx, index, m, m->ol_flags);
@@ -638,11 +633,26 @@ check_all_ports_link_status(uint8_t port_num, uint32_t port_mask)
 		}
 	}
 }
+
+static uint32_t
+eth_dev_get_overhead_len(uint32_t max_rx_pktlen, uint16_t max_mtu)
+{
+	uint32_t overhead_len;
+
+	if (max_mtu != UINT16_MAX && max_rx_pktlen > max_mtu)
+		overhead_len = max_rx_pktlen - max_mtu;
+	else
+		overhead_len = RTE_ETHER_HDR_LEN + RTE_ETHER_CRC_LEN;
+
+	return overhead_len;
+}
+
 /*----------------------------------------------------------------------------*/
 void
 dpdk_load_module(void)
 {
 	int portid, rxlcore_id, ret;
+	uint32_t overhead_len, max_pkt_len;
 	/* for Ethernet flow control settings */
 	struct rte_eth_fc_conf fc_conf;
 	/* setting the rss key */
@@ -680,15 +690,9 @@ dpdk_load_module(void)
 
 			nb_mbuf = RTE_MAX(nb_mbuf, (uint32_t)NB_MBUF);
 #endif
-			/* create the mbuf pools */
-			pktmbuf_pool[rxlcore_id] =
-				rte_mempool_create(name, nb_mbuf,
-				MBUF_SIZE, MEMPOOL_CACHE_SIZE,
-				sizeof(struct rte_pktmbuf_pool_private),
-				rte_pktmbuf_pool_init, NULL,
-				rte_pktmbuf_init, NULL,
-				rte_socket_id(), MEMPOOL_F_SP_PUT |
-				MEMPOOL_F_SC_GET);
+			pktmbuf_pool[rxlcore_id] = rte_pktmbuf_pool_create(name, nb_mbuf,
+					MEMPOOL_CACHE_SIZE, 0, MBUF_SIZE,
+					rte_socket_id());
 
 			if (pktmbuf_pool[rxlcore_id] == NULL)
 				rte_exit(EXIT_FAILURE, "Cannot init mbuf pool, errno: %d\n",
@@ -712,7 +716,18 @@ dpdk_load_module(void)
 			fflush(stdout);
 			if (!strncmp(dev_info[portid].driver_name, "net_mlx", 7))
 				port_conf.rx_adv_conf.rss_conf.rss_key_len = 40;
-			
+
+#if RTE_VERSION < RTE_VERSION_NUM(19, 8, 0, 0)
+			max_pkt_len = ETHER_MAX_LEN,
+#else
+			max_pkt_len = RTE_ETHER_MAX_LEN,
+#endif
+			overhead_len = eth_dev_get_overhead_len(dev_info[portid].max_rx_pktlen,
+					dev_info[portid].max_mtu);
+			port_conf.rxmode.mtu = max_pkt_len - overhead_len;
+			if (port_conf.rxmode.mtu > RTE_ETHER_MTU)
+				port_conf.txmode.offloads |= RTE_ETH_TX_OFFLOAD_MULTI_SEGS;
+
 			ret = rte_eth_dev_configure(portid, CONFIG.num_cores, CONFIG.num_cores, &port_conf);
 			if (ret < 0)
 				rte_exit(EXIT_FAILURE, "Cannot configure device: err=%d, port=%u, cores: %d\n",
@@ -832,7 +847,7 @@ dpdk_dev_ioctl(struct mtcp_thread_context *ctx, int nif, int cmd, void *argp)
 		if ((dev_info[nif].tx_offload_capa & DEV_TX_OFFLOAD_IPV4_CKSUM) == 0)
 			goto dev_ioctl_err;
 		m = dpc->wmbufs[eidx].m_table[len_of_mbuf - 1];
-		m->ol_flags = PKT_TX_IP_CKSUM | PKT_TX_IPV4;
+		m->ol_flags = RTE_MBUF_F_TX_IP_CKSUM | RTE_MBUF_F_TX_IPV4;
 #if RTE_VERSION < RTE_VERSION_NUM(19, 8, 0, 0)
 		m->l2_len = sizeof(struct ether_hdr);
 #else
@@ -845,7 +860,7 @@ dpdk_dev_ioctl(struct mtcp_thread_context *ctx, int nif, int cmd, void *argp)
 			goto dev_ioctl_err;
 		m = dpc->wmbufs[eidx].m_table[len_of_mbuf - 1];
 		tcph = (struct tcphdr *)((unsigned char *)iph + (iph->ihl<<2));
-		m->ol_flags |= PKT_TX_TCP_CKSUM;
+		m->ol_flags |= RTE_MBUF_F_TX_TCP_CKSUM;
 #if RTE_VERSION < RTE_VERSION_NUM(19, 8, 0, 0)
 		tcph->check = rte_ipv4_phdr_cksum((struct ipv4_hdr *)iph, m->ol_flags);
 #else
@@ -898,7 +913,7 @@ dpdk_dev_ioctl(struct mtcp_thread_context *ctx, int nif, int cmd, void *argp)
 #endif
 		m->l3_len = (iph->ihl<<2);
 		m->l4_len = (tcph->doff<<2);
-		m->ol_flags = PKT_TX_TCP_CKSUM | PKT_TX_IP_CKSUM | PKT_TX_IPV4;
+		m->ol_flags = RTE_MBUF_F_TX_TCP_CKSUM | RTE_MBUF_F_TX_IP_CKSUM | RTE_MBUF_F_TX_IPV4;
 #if RTE_VERSION < RTE_VERSION_NUM(19, 8, 0, 0)
 		tcph->check = rte_ipv4_phdr_cksum((struct ipv4_hdr *)iph, m->ol_flags);
 #else

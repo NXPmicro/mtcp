@@ -161,10 +161,12 @@ probe_all_rte_devices(char **argv, int *argc, char *dev_name_list)
 int
 SetNetEnv(char *dev_name_list, char *port_stat_list)
 {
-	int eidx = 0;
 	int i, j;
 
+#ifdef DISABLE_DPDK
 	int set_all_inf = (strncmp(dev_name_list, ALL_STRING, sizeof(ALL_STRING))==0);
+	int eidx = 0;
+#endif
 
 	TRACE_CONFIG("Loading interface setting\n");
 
@@ -315,8 +317,10 @@ SetNetEnv(char *dev_name_list, char *port_stat_list)
 #endif
 					    "--proc-type=auto"
 		};
+		/* No need to call below function, already doing rte_eal_init*/
+#if 0
 		ret = probe_all_rte_devices(argv, &argc, dev_name_list);
-
+#endif
 
 		/* STEP 4: build up socket mem parameter */
 		sprintf(socket_mem_str, "%d", socket_mem);
@@ -367,6 +371,25 @@ SetNetEnv(char *dev_name_list, char *port_stat_list)
 
 		num_queues = MIN(CONFIG.num_cores, MAX_CPUS);
 
+#ifndef DISABLE_DPDK
+		CONFIG.eths_num = num_devices;
+
+		uint32_t ip_base = 10;
+		char dev_name[128];
+		for (i = 0; i < num_devices; i++) {
+			/* TODO check device with user device list update user IPs */
+			CONFIG.eths[i].ip_addr =
+				ip_base + ((0x1 * i) << 28) + ((ports_eth_addr[i].addr_bytes[5] + ports_eth_addr[i].addr_bytes[4])<< 28);
+			memcpy(CONFIG.eths[i].haddr, &ports_eth_addr[i], ETH_ALEN);
+			rte_eth_dev_get_name_by_port(i, dev_name);
+			fprintf(stdout, "Scanned device name = %s\n", dev_name);
+			strcpy(CONFIG.eths[i].dev_name, dev_name);
+			CONFIG.eths[i].ifindex = i;
+			CONFIG.eths[i].netmask = 0x00ffffff;
+			devices_attached[num_devices_attached] = CONFIG.eths[i].ifindex;
+			num_devices_attached++;
+		}
+#else
 		struct ifaddrs *ifap;
 		struct ifaddrs *iter_if;
 		char *seek;
@@ -439,6 +462,7 @@ SetNetEnv(char *dev_name_list, char *port_stat_list)
 		} while (iter_if != NULL);
 
 		freeifaddrs(ifap);
+#endif
 #if 0
 		/*
 		 * XXX: It seems that there is a bug in the RTE SDK.

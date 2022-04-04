@@ -1,0 +1,110 @@
+Compilation
+~~~~~~~~~~~
+
+To compile with DPDK, mTCP is dependant on libgmp and libnuma. Below are the compilation
+steps of these libraries:
+
+NOTE: For DPDK compilation please follow the DPDK README and also specify the "--prefix"
+for installation directory.
+
+Numa Compilation
+~~~~~~~~~~~~~~~~
+
+sudo apt install libtool-bin
+git clone https://github.com/numactl/numactl.git
+cd numactl
+git checkout v2.0.13 -b v2.0.13
+./autogen.sh
+autoconf -i
+./configure --host=aarch64-linux-gnu --prefix=<install path>
+make
+make install
+
+GMP Compilation
+~~~~~~~~~~~~~~~
+
+curl -O https://gmplib.org/download/gmp/gmp-6.2.1.tar.xz
+tar Jxf gmp-6.2.1.tar.xz
+export CFLAGS="-O3"
+export CXXFLAGS="-O3"
+cd gmp-6.2.1/
+./configure --host=aarch64-linux-gnu --prefix=<install path>
+make -j4
+make install
+
+mTCP Compilation
+~~~~~~~~~~~~~~~~
+
+export RTE_SDK=<DPDK base directory Path>
+export CFLAGS=<path of gmp and numa header files>
+export LDFLAGS=<path of gmp and numa libraries>
+export CC=<Cross Compile GCC path>
+./configure --host=aarch64-linux-gnu --with-dpdk-lib=<DPDK installation path>
+make setup-dpdk
+make
+
+App Compilation
+~~~~~~~~~~~~~~~
+
+make -C apps/perf
+
+Sample Compilation setup
+########################
+
+export RTE_SDK=/home/dpdk/dpdk_temp/dpdk_temp/dpdk
+export CFLAGS="-Wno-error -I/home/dpdk/dpdk_temp/dpdk_temp/gmp-6.2.1/gmp/include -I/home/dpdk/dpdk_temp/dpdk_temp/numactl/install/include"
+export LDFLAGS="-L/home/dpdk/dpdk_temp/dpdk_temp/gmp-6.2.1/gmp/lib -L/home/dpdk/dpdk_temp/dpdk_temp/numactl/install/lib"
+export CC=/home/toolchain/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc 
+
+./configure --host=aarch64-linux-gnu --with-dpdk-lib=$RTE_SDK/install
+make setup-dpdk
+make
+
+*********************************
+Application running steps:
+-------------------------
+1. "client" Application:
+
+  Application measures read and write throughput for particular number of seconds.
+  - Setup:
+	* Take 2 DPAA2 boards, run dynamic_dpl.sh script on both boards with at least 1 DPMAC object.
+	* Connect dpmac/ports of both boards with each other (back to back)
+	* Take the "client" application, client.conf, route.conf, arp.conf to the both boards.
+	* copy route.conf and arp.conf to the "./config" directory.
+	* update route and arp entries as per the IPs and MAC address of the interfaces.
+	  Note: User will get the IP and MAC information, when you run the application.
+	* User can update client.conf with correct port names.
+
+  - Running steps:
+	* On first board run below command:
+		#. ./client send <destination IP> <port> <time in seconds>
+	* On 2nd board run below command:
+		#. ./client wait <destination IP> <port> <time in seconds>
+
+  Note: Application can run only on 1 core.
+
+2. Example Webserver:
+
+   - Setup:
+	* Take 2 DPAA2 boards, run dynamic_dpl.sh script on both boards with at least 1 DPMAC object.
+	* Connect dpmac/ports of both boards with each other (back to back)
+	* Take the "epserver" application and "epserver.conf" to the first board.
+	* Take the "epwget" application and "epwget.conf" to the second board.
+	* Take route.conf, arp.conf to the both boards and copy them to the "./config" directory.
+	* update route and arp entries as per the IPs and MAC address of the interfaces.
+	  Note: User will get the IP and MAC information, when you run the application.
+	* User can update epserver.conf and epwget.conf with correct port names.
+
+  - Running steps:
+	* On first board run below command:
+		#. ./epserver -p /home/www -f epserver.conf -N 8
+	* On 2nd board run below command:
+		#. ./epwget <IP/file name> <number of requests> -N 1 -c 8000 -f epwget.conf
+			e.g. ./epwget 10.0.0.112/a.txt 1000000 -N 1 -c 8000 -f epwget.conf
+
+	Where:
+		-p is path of server home directory where all the files are present.
+		-f is configuration file name.
+		-N is number of cores.
+		-c is number of concurrent connections.
+	Note: epwget can work only on 1 core.

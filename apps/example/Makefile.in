@@ -3,15 +3,19 @@
 TARGETS = epserver epwget
 CC=@CC@ -g -O3 -Wall -Werror -fgnu89-inline
 DPDK=@DPDK@
+DPDKLIBPATH=@DPDKLIBPATH@
 PS=@PSIO@
 NETMAP=@NETMAP@
 ONVM=@ONVM@
 CCP=@CCP@
 CFLAGS=@CFLAGS@
+host_alias=@host_alias@
 
 # Add arch-specific optimization
 ifeq ($(shell uname -m),x86_64)
+ifeq ($(host_alias),)
 LIBS += -m64
+endif
 endif
 
 # mtcp library and header 
@@ -44,8 +48,8 @@ endif
 # dpdk-specific variables
 ifeq ($(DPDK),1)
 DPDK_MACHINE_LINKER_FLAGS=$${RTE_SDK}/$${RTE_TARGET}/lib/ldflags.txt
-DPDK_MACHINE_LDFLAGS=$(shell cat ${DPDK_MACHINE_LINKER_FLAGS})
-LIBS += -g -O3 -pthread -lrt -march=native ${MTCP_FLD}/lib/libmtcp.a -lnuma -lmtcp -lpthread -lrt -ldl -lgmp -L${RTE_SDK}/${RTE_TARGET}/lib ${DPDK_MACHINE_LDFLAGS}
+LDFLAGS+=-L@DPDKLIBPATH@/lib
+LIBS += -g -O3 -pthread -lrt -march=native ${MTCP_FLD}/lib/libmtcp.a -lnuma -lmtcp -lpthread -lrt -lm -latomic -ldl -lgmp -Wl,--whole-archive -ldpdk -Wl,--no-whole-archive ${LDFLAGS}
 endif
 
 # onvm-specific variables

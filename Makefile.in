@@ -358,7 +358,13 @@ $(srcdir)/config.h.in:  $(am__configure_deps)
 	($(am__cd) $(top_srcdir) && $(AUTOHEADER))
 	rm -f stamp-h1
 	touch $@
-
+setup-dpdk:
+ifeq ($(DPDK),1)
+	rm -rf $(DPDKLIBPATH)/lib/libmtcpdpdk.a
+	echo "GROUP ( " > $(DPDKLIBPATH)/lib/libmtcpdpdk.a
+	ls $(DPDKLIBPATH)/lib/librte*.a >> $(DPDKLIBPATH)/lib/libmtcpdpdk.a
+	echo " )" >> $(DPDKLIBPATH)/lib/libmtcpdpdk.a
+endif
 distclean-hdr:
 	-rm -f config.h stamp-h1
 mtcp/src/Makefile: $(top_builddir)/config.status $(top_srcdir)/mtcp/src/Makefile.in
