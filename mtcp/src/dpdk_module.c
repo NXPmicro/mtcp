@@ -33,7 +33,6 @@
 #include <rte_ip_frag.h>
 #endif
 /* for ioctl funcs */
-#include <dpdk_iface_common.h>
 /* for retrieving rte version(s) */
 #include <rte_version.h>
 /*----------------------------------------------------------------------------*/
@@ -282,6 +281,7 @@ dpdk_init_handle(struct mtcp_thread_context *ctxt)
 	}
 #endif	/* !IP_DEFRAG */
 
+#if 0
 #ifdef ENABLE_STATS_IOCTL
 	dpc->fd = open(DEV_PATH, O_RDWR);
 	if (dpc->fd == -1) {
@@ -290,6 +290,7 @@ dpdk_init_handle(struct mtcp_thread_context *ctxt)
 			    ctxt->cpu);
 	}
 #endif /* !ENABLE_STATS_IOCTL */
+#endif
 }
 /*----------------------------------------------------------------------------*/
 int
@@ -337,6 +338,8 @@ dpdk_send_pkts(struct mtcp_thread_context *ctxt, int ifidx)
 		pkts = dpc->wmbufs[ifidx].m_table;
 #ifdef NETSTAT
 		mtcp->nstat.tx_packets[ifidx] += cnt;
+#if 1
+#define SEND_STATS		 0
 #ifdef ENABLE_STATS_IOCTL
 		/* only pass stats after >= 1 sec interval */
 		if (abs(mtcp->cur_ts - dpc->cur_ts) >= 1000 &&
@@ -364,6 +367,7 @@ dpdk_send_pkts(struct mtcp_thread_context *ctxt, int ifidx)
 				rte_eth_stats_reset(portid);
 		}
 #endif /* !ENABLE_STATS_IOCTL */
+#endif
 #endif
 		do {
 			/* tx cnt # of packets */

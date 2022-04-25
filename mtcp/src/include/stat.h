@@ -1,6 +1,8 @@
 #ifndef STAT_H
 #define STAT_H
 
+#include "config.h"
+
 struct run_stat
 {
 	uint64_t rounds;

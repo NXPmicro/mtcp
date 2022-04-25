@@ -11,7 +11,6 @@
 #include <sched.h>
 
 #include "cpu.h"
-#include "ps.h"
 #include "eth_in.h"
 #include "fhash.h"
 #include "tcp_send_buffer.h"

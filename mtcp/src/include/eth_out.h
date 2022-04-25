@@ -5,7 +5,6 @@
 
 #include "mtcp.h"
 #include "tcp_stream.h"
-#include "ps.h"
 
 #define MAX_SEND_PCK_CHUNK 64
 

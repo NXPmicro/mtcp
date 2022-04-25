@@ -1,12 +1,12 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include "ps.h"
-
 extern int num_cpus;
 extern int num_queues;
 extern int num_devices;
 
+#define ETH_ALEN 6
+#define MAX_DEVICES 16
 extern int num_devices_attached;
 extern int devices_attached[MAX_DEVICES];
 

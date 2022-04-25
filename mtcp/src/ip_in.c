@@ -4,7 +4,6 @@
 #include "ip_in.h"
 #include "tcp_in.h"
 #include "mtcp_api.h"
-#include "ps.h"
 #include "debug.h"
 #include "icmp.h"
 
