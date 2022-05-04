@@ -360,10 +360,10 @@ $(srcdir)/config.h.in:  $(am__configure_deps)
 
 setup-dpdk:
 ifeq ($(DPDK),1)
-	rm -rf $(DPDKLIBPATH)/lib/libmtcpdpdk.a
-	echo "GROUP ( " > $(DPDKLIBPATH)/lib/libmtcpdpdk.a
-	ls $(DPDKLIBPATH)/lib/librte*.a >> $(DPDKLIBPATH)/lib/libmtcpdpdk.a
-	echo " )" >> $(DPDKLIBPATH)/lib/libmtcpdpdk.a
+	rm -rf $(DPDKLIBPATH)/lib/libdpdk.a
+	echo "GROUP ( " > $(DPDKLIBPATH)/lib/libdpdk.a
+	ls $(DPDKLIBPATH)/lib/librte*.a >> $(DPDKLIBPATH)/lib/libdpdk.a
+	echo " )" >> $(DPDKLIBPATH)/lib/libdpdk.a
 endif
 
 distclean-hdr:
