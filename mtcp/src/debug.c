@@ -5,7 +5,6 @@
 #include <stdarg.h>
 #include "debug.h"
 #include "tcp_in.h"
-#include "logger.h"
 
 /*----------------------------------------------------------------------------*/
 void

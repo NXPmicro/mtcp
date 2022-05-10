@@ -21,7 +21,6 @@
 #include "tcp_out.h"
 #include "mtcp_api.h"
 #include "eventpoll.h"
-#include "logger.h"
 #include "config.h"
 #include "arp.h"
 #include "ip_out.h"

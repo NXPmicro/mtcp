@@ -9,7 +9,7 @@
 enum {
 	IDLE_LOGT,
 	ACTIVE_LOGT
-} log_thread_state;
+};
 
 typedef struct log_buff
 {
