@@ -1,3 +1,10 @@
+/*
+ * Modifications to this original mTCP code:
+ * Copyright 2022 NXP
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 /* for io_module_func def'ns */
 #include "io_module.h"
 #ifndef DISABLE_DPDK

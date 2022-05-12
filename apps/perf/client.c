@@ -1,3 +1,10 @@
+/*
+ * Modifications to this original mTCP code:
+ * Copyright 2022 NXP
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

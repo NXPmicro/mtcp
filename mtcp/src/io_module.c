@@ -1,3 +1,10 @@
+/*
+ * Modifications to this original mTCP code:
+ * Copyright 2022 NXP
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 /* for I/O module def'ns */
 #include "io_module.h"
 /* for num_devices decl */

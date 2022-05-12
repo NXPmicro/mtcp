@@ -3,9 +3,11 @@
 ========================================================================
 
 mTCP is a highly scalable user-level TCP stack for multicore systems. 
-mTCP source code is distributed under the Modified BSD License. For 
-more detail, please refer to the LICENSE. The license term of io_engine 
-driver and ported applications may differ from the mTCP’s.
+mTCP source code is distributed under the BSD-3-License. For
+more detail, please refer to the LICENSE. The license term of following
+ported applications may differ from the mTCP’s.
+	a. apps/apache_benchmark -  Apache License Version 2.0
+	b. apps/lighttpd-1.4.32  - BSD-3-Clause license
 
 ========================================================================
  PREREQUISITE
