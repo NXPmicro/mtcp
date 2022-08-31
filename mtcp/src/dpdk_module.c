@@ -23,7 +23,7 @@
 /* for delay funcs */
 #include <rte_cycles.h>
 #include <rte_errno.h>
-#define ENABLE_STATS_IOCTL		1
+#undef ENABLE_STATS_IOCTL
 #ifdef ENABLE_STATS_IOCTL
 /* for close */
 #include <unistd.h>
@@ -288,7 +288,6 @@ dpdk_init_handle(struct mtcp_thread_context *ctxt)
 	}
 #endif	/* !IP_DEFRAG */
 
-#if 0
 #ifdef ENABLE_STATS_IOCTL
 	dpc->fd = open(DEV_PATH, O_RDWR);
 	if (dpc->fd == -1) {
@@ -297,7 +296,6 @@ dpdk_init_handle(struct mtcp_thread_context *ctxt)
 			    ctxt->cpu);
 	}
 #endif /* !ENABLE_STATS_IOCTL */
-#endif
 }
 /*----------------------------------------------------------------------------*/
 int
@@ -345,7 +343,6 @@ dpdk_send_pkts(struct mtcp_thread_context *ctxt, int ifidx)
 		pkts = dpc->wmbufs[ifidx].m_table;
 #ifdef NETSTAT
 		mtcp->nstat.tx_packets[ifidx] += cnt;
-#if 1
 #define SEND_STATS		 0
 #ifdef ENABLE_STATS_IOCTL
 		/* only pass stats after >= 1 sec interval */
@@ -374,7 +371,6 @@ dpdk_send_pkts(struct mtcp_thread_context *ctxt, int ifidx)
 				rte_eth_stats_reset(portid);
 		}
 #endif /* !ENABLE_STATS_IOCTL */
-#endif
 #endif
 		do {
 			/* tx cnt # of packets */
