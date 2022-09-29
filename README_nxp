@@ -63,19 +63,31 @@ make
 *********************************
 Application running steps:
 -------------------------
+
+DPAA2 Setup:
+------------
+	* Take 2 DPAA2 boards, run dynamic_dpl.sh script on both boards with at least 1 DPMAC object.
+	* Connect dpmac/ports of both boards with each other (back to back)
+
+DPAA Setup:
+-----------
+	* Create a back-to-back setup of two DPAA boards.
+	* Execute the fmc script files.
+
 1. "client" Application:
 
   Application measures read and write throughput for particular number of seconds.
-  - Setup:
-	* Take 2 DPAA2 boards, run dynamic_dpl.sh script on both boards with at least 1 DPMAC object.
-	* Connect dpmac/ports of both boards with each other (back to back)
-	* Take the "client" application, client.conf, route.conf, arp.conf to the both boards.
-	* copy route.conf and arp.conf to the "./config" directory.
-	* update route and arp entries as per the IPs and MAC address of the interfaces.
-	  Note: User will get the IP and MAC information, when you run the application.
-	* User can update client.conf with correct port names.
 
-  - Running steps:
+  - Running steps (DPAA and DPAA2):
+
+	* Take the "client" application, client.conf, sample_route.conf, sample_arp.conf to the both boards.
+	* Rename the sample files to route.conf and arp.conf.
+	* Update route and arp entries as per the IPs and MAC address of the interfaces.
+	  Note: User will get the IP and MAC information, when you run the application.
+	* Copy route.conf and arp.conf to the "./config" directory.
+	* Update client.conf with correct port names.
+		ie. dpni.* in case of DPAA2 and fm1-mac* in case of DPAA1.
+
 	* On first board run below command:
 		#. ./client send <destination IP> <port> <time in seconds>
 	* On 2nd board run below command:
@@ -85,17 +97,19 @@ Application running steps:
 
 2. Example Webserver:
 
-   - Setup:
-	* Take 2 DPAA2 boards, run dynamic_dpl.sh script on both boards with at least 1 DPMAC object.
-	* Connect dpmac/ports of both boards with each other (back to back)
+  - Running steps (DPAA and DPAA2):
+
 	* Take the "epserver" application and "epserver.conf" to the first board.
 	* Take the "epwget" application and "epwget.conf" to the second board.
-	* Take route.conf, arp.conf to the both boards and copy them to the "./config" directory.
-	* update route and arp entries as per the IPs and MAC address of the interfaces.
+	* Take sample_route.conf, sample_arp.conf to the both boards.
+	* Rename the sample files to route.conf and arp.conf.
+	* Update route and arp entries as per the IPs and MAC address of the interfaces.
 	  Note: User will get the IP and MAC information, when you run the application.
-	* User can update epserver.conf and epwget.conf with correct port names.
+	* Copy route.conf and arp.conf to the "./config" directory.
+	* Update epserver.conf and epwget.conf with correct port names.
+		ie. dpni.* in case of DPAA2 and fm1-mac* in case of DPAA1.
+	* Create a random txt file on the server board in the /home/www directory.
 
-  - Running steps:
 	* On first board run below command:
 		#. ./epserver -p /home/www -f epserver.conf -N 8
 	* On 2nd board run below command:
