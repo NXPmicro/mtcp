@@ -325,7 +325,7 @@ SetNetEnv(char *dev_name_list, char *port_stat_list)
 		for (i = 0; i < num_devices; i++) {
 			/* TODO check device with user device list update user IPs */
 			CONFIG.eths[i].ip_addr =
-				ip_base + ((0x1 * i) << 28) + ((ports_eth_addr[i].addr_bytes[5] + ports_eth_addr[i].addr_bytes[4])<< 28);
+				(ip_base + i) + ((0x1 * i) << 28) + ((ports_eth_addr[i].addr_bytes[5] + ports_eth_addr[i].addr_bytes[4])<< 28);
 			memcpy(CONFIG.eths[i].haddr, &ports_eth_addr[i], ETH_ALEN);
 			rte_eth_dev_get_name_by_port(i, dev_name);
 			fprintf(stdout, "Scanned device name = %s\n", dev_name);
