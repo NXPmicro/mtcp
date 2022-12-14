@@ -15,7 +15,7 @@ PATCHES IN MTCP
 Patch for:                   mtcp.git
 Outgoing License:            BSD-3-Clause
 License File:                LICENSE
-Package Category:            BSP
+Package Category:            user space
 Type of Content:             source
 Description and comments:    mTCP with DPDK 21.11v and NXP platform support.
-Origin:                      https://github.com/mtcp-stack/mtcp
+Origin:                      mTCP (BSD) https://github.com/mtcp-stack/mtcp
