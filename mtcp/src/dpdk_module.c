@@ -1,6 +1,6 @@
 /*
  * Modifications to this original mTCP code:
- * Copyright 2022 NXP
+ * Copyright 2022-2023 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -115,19 +115,18 @@ static struct rte_eth_dev_info dev_info[RTE_MAX_ETHPORTS];
 
 static struct rte_eth_conf port_conf = {
 	.rxmode = {
-		.mq_mode	= 	ETH_MQ_RX_RSS,
+		.mq_mode	= 	RTE_ETH_MQ_RX_RSS,
 #if RTE_VERSION > RTE_VERSION_NUM(17, 8, 0, 0)
 		.offloads	=	(
 #if RTE_VERSION < RTE_VERSION_NUM(18, 5, 0, 0)
 					 DEV_RX_OFFLOAD_CRC_STRIP |
 #endif /* !18.05 */
-					 DEV_RX_OFFLOAD_CHECKSUM
+					 RTE_ETH_RX_OFFLOAD_CHECKSUM
 #ifdef ENABLELRO
 					 | DEV_RX_OFFLOAD_TCP_LRO
 #endif
 					 ),
 #endif /* !17.08 */
-		.split_hdr_size = 	0,
 #if RTE_VERSION < RTE_VERSION_NUM(18, 5, 0, 0)
 		.header_split   = 	0, /**< Header Split disabled */
 		.hw_ip_checksum = 	1, /**< IP checksum offload enabled */
@@ -142,16 +141,16 @@ static struct rte_eth_conf port_conf = {
 	.rx_adv_conf = {
 		.rss_conf = {
 			.rss_key = 	NULL,
-			.rss_hf = 	ETH_RSS_TCP | ETH_RSS_UDP |
-					ETH_RSS_IP | ETH_RSS_L2_PAYLOAD
+			.rss_hf = 	RTE_ETH_RSS_TCP | RTE_ETH_RSS_UDP |
+					RTE_ETH_RSS_IP | RTE_ETH_RSS_L2_PAYLOAD
 		},
 	},
 	.txmode = {
-		.mq_mode = 		ETH_MQ_TX_NONE,
+		.mq_mode = 		RTE_ETH_MQ_TX_NONE,
 #if RTE_VERSION >= RTE_VERSION_NUM(18, 5, 0, 0)
-		.offloads	=	(DEV_TX_OFFLOAD_IPV4_CKSUM |
-					 DEV_TX_OFFLOAD_UDP_CKSUM |
-					 DEV_TX_OFFLOAD_TCP_CKSUM)
+		.offloads	=	(RTE_ETH_TX_OFFLOAD_IPV4_CKSUM |
+					 RTE_ETH_TX_OFFLOAD_UDP_CKSUM |
+					 RTE_ETH_TX_OFFLOAD_TCP_CKSUM)
 #endif
 	},
 };
@@ -610,7 +609,7 @@ check_all_ports_link_status(uint8_t port_num, uint32_t port_mask)
 					printf("Port %d Link Up - speed %u "
 						"Mbps - %s\n", (uint8_t)portid,
 						(unsigned)link.link_speed,
-				(link.link_duplex == ETH_LINK_FULL_DUPLEX) ?
+				(link.link_duplex == RTE_ETH_LINK_FULL_DUPLEX) ?
 					("full-duplex") : ("half-duplex\n"));
 				else
 					printf("Port %d Link Down\n",
@@ -783,7 +782,7 @@ dpdk_load_module(void)
                                 TRACE_INFO("Failed to get flow control info!\n");
 
 			/* and just disable the rx/tx flow control */
-			fc_conf.mode = RTE_FC_NONE;
+			fc_conf.mode = RTE_ETH_FC_NONE;
 			ret = rte_eth_dev_flow_ctrl_set(portid, &fc_conf);
                         if (ret != 0)
                                 TRACE_INFO("Failed to set flow control info!: errno: %d\n",
@@ -851,7 +850,7 @@ dpdk_dev_ioctl(struct mtcp_thread_context *ctx, int nif, int cmd, void *argp)
 
 	switch (cmd) {
 	case PKT_TX_IP_CSUM:
-		if ((dev_info[nif].tx_offload_capa & DEV_TX_OFFLOAD_IPV4_CKSUM) == 0)
+		if ((dev_info[nif].tx_offload_capa & RTE_ETH_TX_OFFLOAD_IPV4_CKSUM) == 0)
 			goto dev_ioctl_err;
 		m = dpc->wmbufs[eidx].m_table[len_of_mbuf - 1];
 		m->ol_flags = RTE_MBUF_F_TX_IP_CKSUM | RTE_MBUF_F_TX_IPV4;
@@ -863,7 +862,7 @@ dpdk_dev_ioctl(struct mtcp_thread_context *ctx, int nif, int cmd, void *argp)
 		m->l3_len = (iph->ihl<<2);
 		break;
 	case PKT_TX_TCP_CSUM:
-		if ((dev_info[nif].tx_offload_capa & DEV_TX_OFFLOAD_TCP_CKSUM) == 0)
+		if ((dev_info[nif].tx_offload_capa & RTE_ETH_TX_OFFLOAD_TCP_CKSUM) == 0)
 			goto dev_ioctl_err;
 		m = dpc->wmbufs[eidx].m_table[len_of_mbuf - 1];
 		tcph = (struct tcphdr *)((unsigned char *)iph + (iph->ihl<<2));
@@ -902,9 +901,9 @@ dpdk_dev_ioctl(struct mtcp_thread_context *ctx, int nif, int cmd, void *argp)
 		break;
 #endif
 	case PKT_TX_TCPIP_CSUM:
-		if ((dev_info[nif].tx_offload_capa & DEV_TX_OFFLOAD_IPV4_CKSUM) == 0)
+		if ((dev_info[nif].tx_offload_capa & RTE_ETH_TX_OFFLOAD_IPV4_CKSUM) == 0)
 			goto dev_ioctl_err;
-		if ((dev_info[nif].tx_offload_capa & DEV_TX_OFFLOAD_TCP_CKSUM) == 0)
+		if ((dev_info[nif].tx_offload_capa & RTE_ETH_TX_OFFLOAD_TCP_CKSUM) == 0)
 			goto dev_ioctl_err;
 		m = dpc->wmbufs[eidx].m_table[len_of_mbuf - 1];
 #if RTE_VERSION < RTE_VERSION_NUM(19, 8, 0, 0)
@@ -928,17 +927,17 @@ dpdk_dev_ioctl(struct mtcp_thread_context *ctx, int nif, int cmd, void *argp)
 #endif
 		break;
 	case PKT_RX_IP_CSUM:
-		if ((dev_info[nif].rx_offload_capa & DEV_RX_OFFLOAD_IPV4_CKSUM) == 0)
+		if ((dev_info[nif].rx_offload_capa & RTE_ETH_RX_OFFLOAD_IPV4_CKSUM) == 0)
 			goto dev_ioctl_err;
 		break;
 	case PKT_RX_TCP_CSUM:
-		if ((dev_info[nif].rx_offload_capa & DEV_RX_OFFLOAD_TCP_CKSUM) == 0)
+		if ((dev_info[nif].rx_offload_capa & RTE_ETH_RX_OFFLOAD_TCP_CKSUM) == 0)
 			goto dev_ioctl_err;
 		break;
 	case PKT_TX_TCPIP_CSUM_PEEK:
-		if ((dev_info[nif].tx_offload_capa & DEV_TX_OFFLOAD_IPV4_CKSUM) == 0)
+		if ((dev_info[nif].tx_offload_capa & RTE_ETH_TX_OFFLOAD_IPV4_CKSUM) == 0)
 			goto dev_ioctl_err;
-		if ((dev_info[nif].tx_offload_capa & DEV_TX_OFFLOAD_TCP_CKSUM) == 0)
+		if ((dev_info[nif].tx_offload_capa & RTE_ETH_TX_OFFLOAD_TCP_CKSUM) == 0)
 			goto dev_ioctl_err;
 		break;
 	default:
