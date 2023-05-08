@@ -17,5 +17,5 @@ Outgoing License:            BSD-3-Clause
 License File:                LICENSE
 Package Category:            user space
 Type of Content:             source
-Description and comments:    mTCP with DPDK 21.11v and NXP platform support.
+Description and comments:    mTCP with DPDK 22.11v and NXP platform support.
 Origin:                      mTCP (BSD) https://github.com/mtcp-stack/mtcp
