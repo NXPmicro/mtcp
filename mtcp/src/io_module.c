@@ -428,7 +428,7 @@ SetNetEnv(char *dev_name_list, char *port_stat_list)
 		}
 #endif
 		/* check if process is primary or secondary */
-		CONFIG.multi_process_is_master = (eal_proc_type_detect() == RTE_PROC_PRIMARY) ?
+		CONFIG.multi_process_is_master = (rte_eal_process_type() == RTE_PROC_PRIMARY) ?
 			1 : 0;
 		
 #endif /* !DISABLE_DPDK */
