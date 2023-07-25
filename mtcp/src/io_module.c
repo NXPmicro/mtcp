@@ -311,30 +311,60 @@ SetNetEnv(char *dev_name_list, char *port_stat_list)
 			exit(EXIT_FAILURE);
 		}
 
-		/* get mac addr entries of 'detected' dpdk ports */
-		for (ret = 0; ret < num_devices; ret++)
-			rte_eth_macaddr_get(ret, &ports_eth_addr[ret]);
-
 		num_queues = MIN(CONFIG.num_cores, MAX_CPUS);
 
 #ifndef DISABLE_DPDK
-		CONFIG.eths_num = num_devices;
+		CONFIG.eths_num = 0;
 
-		uint32_t ip_base = 10;
-		char dev_name[128];
-		for (i = 0; i < num_devices; i++) {
-			/* TODO check device with user device list update user IPs */
-			CONFIG.eths[i].ip_addr =
-				(ip_base + i) + ((0x1 * i) << 28) + ((ports_eth_addr[i].addr_bytes[5] + ports_eth_addr[i].addr_bytes[4])<< 28);
-			memcpy(CONFIG.eths[i].haddr, &ports_eth_addr[i], ETH_ALEN);
-			rte_eth_dev_get_name_by_port(i, dev_name);
-			fprintf(stdout, "Scanned device name = %s\n", dev_name);
-			strcpy(CONFIG.eths[i].dev_name, dev_name);
-			CONFIG.eths[i].ifindex = i;
-			CONFIG.eths[i].netmask = 0x00ffffff;
-			devices_attached[num_devices_attached] = CONFIG.eths[i].ifindex;
-			num_devices_attached++;
+		int i = 0, ip_base = 0x10;
+		uint16_t port_id;
+		uint32_t netmask = 0xffffffff;
+		char *token, *end_str, *end_str2;
+		token = strtok_r(dev_name_list, "= ", &end_str);
+		if (token == NULL) {
+			printf("Port list invalid\n");
+			return -1;
 		}
+		token = strtok_r(token, ",\n\r" , &end_str);
+		while (token != NULL) {
+			token = strtok_r(token, ":", &end_str2);
+			strcpy(CONFIG.eths[i].dev_name, token);
+			ret = rte_eth_dev_get_port_by_name(CONFIG.eths[i].dev_name, &port_id);
+			if (ret != 0) {
+				printf("Invalid Port Name %s\n", CONFIG.eths[i].dev_name);
+				break;
+			}
+			printf("port id ========= %d\n", port_id);
+			rte_eth_macaddr_get(port_id, &ports_eth_addr[i]);
+			token = strtok_r(end_str2, "/", &end_str2);
+			if (token != NULL) {
+				CONFIG.eths[i].netmask = netmask >> (32 - atoi(end_str2));
+				token = strtok_r(token, ".", &end_str2);
+				CONFIG.eths[i].ip_addr = atoi(token);
+				int k = 0;
+				while(token != NULL) {
+					token = strtok_r(NULL, ".", &end_str2);
+					k = k + 8;
+					if (token == NULL)
+						break;
+					CONFIG.eths[i].ip_addr |= atoi(token) << k;
+				}
+			} else {
+				printf("WARN: using random IP for interface = %s\n", CONFIG.eths[i].dev_name);
+				CONFIG.eths[i].ip_addr =
+					(ip_base + i) + ((0x1 * i) << 28) + ((ports_eth_addr[i].addr_bytes[5] + ports_eth_addr[i].addr_bytes[4])<< 28);
+				CONFIG.eths[i].netmask = 0x00ffffff;
+			}
+			memcpy(CONFIG.eths[i].haddr, &ports_eth_addr[i], ETH_ALEN);
+			CONFIG.eths[i].ifindex = port_id;
+			devices_attached[num_devices_attached] = CONFIG.eths[i].ifindex;
+			CONFIG.eths_num++;
+			num_devices_attached++;
+			fprintf(stdout, "Scanned device name = %s\n", CONFIG.eths[i].dev_name);
+			i++;
+			token = strtok_r(end_str, ",\n\r" , &end_str);
+		}
+		printf("number of devices attached = %d\n", num_devices_attached);
 #else
 		struct ifaddrs *ifap;
 		struct ifaddrs *iter_if;

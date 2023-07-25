@@ -67,12 +67,13 @@ Application running steps:
 DPAA2 Setup:
 ------------
 	* Take 2 DPAA2 boards, run dynamic_dpl.sh script on both boards with at least 1 DPMAC object.
+	  please refer DPDK documentation for setup.
 	* Connect dpmac/ports of both boards with each other (back to back)
 
 DPAA Setup:
 -----------
 	* Create a back-to-back setup of two DPAA boards.
-	* Execute the fmc script files.
+	* Execute the fmc script files. please refer DPDK documentation for FMC commands.
 
 1. "client" Application:
 
@@ -83,15 +84,26 @@ DPAA Setup:
 	* Take the "client" application, client.conf, sample_route.conf, sample_arp.conf to the both boards.
 	* Rename the sample files to route.conf and arp.conf.
 	* Update route and arp entries as per the IPs and MAC address of the interfaces.
-	  Note: User will get the IP and MAC information, when you run the application.
+	  Note: User will get to know about port MAC address and IP address (if not given
+		in config file) on application run. so first execute the application,
+		get the IP addresses and MAC addresses and fill the route and arp config and
+		re-run the application.
 	* Copy route.conf and arp.conf to the "./config" directory.
-	* Update client.conf with correct port names.
+	* Update client.conf with required details and correct port names to be used for
+	  traffic and port names must be comma(,) separated.
 		ie. dpni.* in case of DPAA2 and fm1-mac* in case of DPAA1.
+
+	  Please refer section "MTCP configuration Section" in this README for more deatils.
 
 	* On first board run below command:
 		#. ./client send <destination IP> <port> <time in seconds>
+
 	* On 2nd board run below command:
 		#. ./client wait <destination IP> <port> <time in seconds>
+
+	whereas:
+		<destination IP>: IP address of neighbour
+		<port>: Any TCP port number
 
   Note: Application can run only on 1 core.
 
@@ -104,10 +116,16 @@ DPAA Setup:
 	* Take sample_route.conf, sample_arp.conf to the both boards.
 	* Rename the sample files to route.conf and arp.conf.
 	* Update route and arp entries as per the IPs and MAC address of the interfaces.
-	  Note: User will get the IP and MAC information, when you run the application.
+	  Note: User will get to know about port MAC address and IP address (if not given
+		in config file) on application run. so first execute the application,
+		get the IP addresses and MAC addresses and fill the route and arp config
+		and re-run the application.
 	* Copy route.conf and arp.conf to the "./config" directory.
-	* Update epserver.conf and epwget.conf with correct port names.
+	* Update epserver.conf and epwget.conf with required details and correct port names
+	  to be used for traffic and port names must be comma(,) separated.
 		ie. dpni.* in case of DPAA2 and fm1-mac* in case of DPAA1.
+		Please refer section "MTCP configuration Section" in this README for more deatils.
+
 	* Create a random txt file on the server board in the /home/www directory.
 
 	* On first board run below command:
@@ -122,3 +140,28 @@ DPAA Setup:
 		-N is number of cores.
 		-c is number of concurrent connections.
 	Note: epwget can work only on 1 core.
+
+MTCP configuration Section:
+--------------------------
+
+	Please refer "apps/perf/client.conf" sample file for more details on configuration supported by MTCP.
+	Below is the "Port" param description:
+
+	Port: List of port names to be used for traffic. Port names must be comma(,) separated.
+                ie. dpni.* in case of DPAA2 and fm1-mac* in case of DPAA1.
+
+		e.g. on DPAA1, user want to use only fm1-mac9 and fm1-mac10 ports and in
+		     that case port configuration will be like:
+		     port = fm1-mac9,fm1-mac10
+
+		Note: The "port" config parameter also accept user's given IP address for each
+			port. If IP is not given for port then MTCP stack will generate
+			random IPs.
+
+		examples port configuration with IP addresses:
+			port = fm1-mac9:192.168.1.1/24,fm1-mac10:192.168.2.1/24
+
+				MTCP stack will initialize fm1-mac9 with IP 192.168.1.1 and
+				netmask value 255.255.255.0 and fm1-mac10 with IP 192.168.2.1
+				and netmask value 255.255.255.0.
+			IP value must be immediate after port name and colon(:) separated.
