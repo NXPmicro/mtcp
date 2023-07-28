@@ -145,7 +145,7 @@ MTCP configuration Section:
 --------------------------
 
 	Please refer "apps/perf/client.conf" sample file for more details on configuration supported by MTCP.
-	Below is the "Port" param description:
+	Below is the "Port" and "eal_args" parameters description:
 
 	Port: List of port names to be used for traffic. Port names must be comma(,) separated.
                 ie. dpni.* in case of DPAA2 and fm1-mac* in case of DPAA1.
@@ -165,3 +165,13 @@ MTCP configuration Section:
 				netmask value 255.255.255.0 and fm1-mac10 with IP 192.168.2.1
 				and netmask value 255.255.255.0.
 			IP value must be immediate after port name and colon(:) separated.
+
+	eal_args: List of DPDK EAL library configuration. please refer:
+		  https://doc.dpdk.org/guides/linux_gsg/linux_eal_parameters.html
+		  for detail list of supported parameters.
+
+		  e.g.: eal_args = --log-level=8 -b dpaa_bus:fm1-mac10
+
+		  Parameters must be separated by a space chareacter.
+		  Note: please dont use eal_args for core-mask, "num_cores" can be used for
+			number of cores.

@@ -105,7 +105,7 @@ GetNumQueues()
 #endif /* !PSIO */
 /*----------------------------------------------------------------------------*/
 int
-SetNetEnv(char *dev_name_list, char *port_stat_list)
+SetNetEnv(char *dev_name_list, char *port_stat_list, char *port_eal_param)
 {
 	int i, j;
 
@@ -251,18 +251,19 @@ SetNetEnv(char *dev_name_list, char *port_stat_list)
 				       RTE_CACHE_LINE_SIZE);
 		
 		/* initialize the rte env, what a waste of implementation effort! */
-		int argc = 6;//8;
+		char  *eal_arg_end;
+		eal_arg_end = port_eal_param;
+		int argc = 6;
 		char *argv[RTE_ARGC_MAX] = {"",
 					    "-c",
 					    cpumaskbuf,
 					    "-n",
 					    mem_channels,
-#if 0
-					    "--socket-mem",
-					    socket_mem_str,
-#endif
 					    "--proc-type=auto"
 		};
+		while ((argv[argc] = strtok_r(eal_arg_end, "= ", &eal_arg_end)))
+			argc++;
+
 		/* No need to call below function, already doing rte_eal_init*/
 #if 0
 		ret = probe_all_rte_devices(argv, &argc, dev_name_list);

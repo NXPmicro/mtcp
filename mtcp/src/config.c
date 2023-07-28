@@ -49,6 +49,7 @@ struct mtcp_config CONFIG = {
 addr_pool_t ap[ETH_NUM] = 			{NULL};
 static char port_list[MAX_OPTLINE_LEN] = 	"";
 static char port_stat_list[MAX_OPTLINE_LEN] = 	"";
+static char port_eal_param[MAX_OPTLINE_LEN] = 	"";
 /* total cpus detected in the mTCP stack*/
 int num_cpus;
 /* this should be equal to num_cpus */
@@ -545,6 +546,13 @@ SaveInterfaceInfo(char *dev_name_list)
 {
 	strcpy(port_list, dev_name_list);
 }
+
+static inline void
+SaveInterfaceEALInfo(char *dev_name_list)
+{
+	strcpy(port_eal_param, dev_name_list);
+}
+
 /*----------------------------------------------------------------------------*/
 static inline void
 SaveInterfaceStatList(char *dev_name_list)
@@ -569,10 +577,14 @@ ParseConfiguration(char *line)
 		return -1;
 	}
 
-	q = strtok_r(NULL, " \t=", &saveptr);
-	if (q == NULL) {
-		TRACE_CONFIG("No option value found for the line: %s\n", line);
-		return -1;
+	if (strcmp(p, "eal_args") == 0) {
+		q = saveptr;
+	} else {
+		q = strtok_r(NULL, " \t=", &saveptr);
+		if (q == NULL) {
+			TRACE_CONFIG("No option value found for the line: %s\n", line);
+			return -1;
+		}
 	}
 
 	if (strcmp(p, "num_cores") == 0) {
@@ -632,6 +644,8 @@ ParseConfiguration(char *line)
 			SaveInterfaceInfo(q);
 		else
 			SaveInterfaceInfo(line + strlen(p) + 1);
+	} else if (strcmp(p, "eal_args") == 0) {
+		SaveInterfaceEALInfo(q);
 	} else if (strcmp(p, "io") == 0) {
 		AssignIOModule(q);
 		if (CheckIOModuleAccessPermissions() == -1) {
@@ -727,7 +741,7 @@ LoadConfiguration(const char *fname)
 	if (CONFIG.rcvbuf_size == -1 && CONFIG.sndbuf_size == -1)
 		CONFIG.sndbuf_size = CONFIG.rcvbuf_size = 8192;
 	
-	return SetNetEnv(port_list, port_stat_list);
+	return SetNetEnv(port_list, port_stat_list, port_eal_param);
 	
 	return 0;
 }
