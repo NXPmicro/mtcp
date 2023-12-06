@@ -586,21 +586,20 @@ dpdk_destroy_handle(struct mtcp_thread_context *ctxt)
 }
 /*----------------------------------------------------------------------------*/
 static void
-check_all_ports_link_status(uint8_t port_num, uint32_t port_mask)
+check_all_ports_link_status(void)
 {
 #define CHECK_INTERVAL 			100 /* 100ms */
 #define MAX_CHECK_TIME 			90 /* 9s (90 * 100ms) in total */
 
-	uint8_t portid, count, all_ports_up, print_flag = 0;
+	uint8_t i, portid, count, all_ports_up, print_flag = 0;
 	struct rte_eth_link link;
 
 	printf("\nChecking link status");
 	fflush(stdout);
 	for (count = 0; count <= MAX_CHECK_TIME; count++) {
 		all_ports_up = 1;
-		for (portid = 0; portid < port_num; portid++) {
-			if ((port_mask & (1 << portid)) == 0)
-				continue;
+		for (i = 0; i < num_devices_attached; i++) {
+			portid = devices_attached[i];
 			memset(&link, 0, sizeof(link));
 			rte_eth_link_get_nowait(portid, &link);
 			/* print link status if flag set */
@@ -800,7 +799,7 @@ dpdk_load_module(void)
 #endif
 		}
 		/* only check for link status if the thread is master */
-		check_all_ports_link_status(num_devices_attached, 0xFFFFFFFF);
+		check_all_ports_link_status();
 	} else { /* CONFIG.multi_process && !CONFIG.multi_process_is_master */
 		for (rxlcore_id = 0; rxlcore_id < CONFIG.num_cores; rxlcore_id++) {
                         char name[RTE_MEMPOOL_NAMESIZE];
