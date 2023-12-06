@@ -302,14 +302,17 @@ end_wait_loop:
 		DEBUG("Connecting socket...");
 		ret = mtcp_connect(mctx, sockfd, (struct sockaddr *)&daddr, sizeof(struct sockaddr_in));
 		if (ret < 0) {
-			ERROR("mtcp_connect failed.");
 			if (errno != EINPROGRESS) {
+				ERROR("mtcp_connect failed (%d).", errno);
 				perror("mtcp_connect");
 				mtcp_close(mctx, sockfd);
 				return -1;
+			} else {
+				DEBUG("Connection creation in progress.");
 			}
+		} else {
+			DEBUG("Connection created.");
 		}
-		DEBUG("Connection created.");
 	}
 
 	buf[BUF_LEN-1] = '\0';
