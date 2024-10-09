@@ -1,6 +1,6 @@
 /*
  * Modifications to this original mTCP code:
- * Copyright 2022-2023 NXP
+ * Copyright 2022-2024 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -778,13 +778,13 @@ dpdk_load_module(void)
 			memset(&fc_conf, 0, sizeof(fc_conf));
                         ret = rte_eth_dev_flow_ctrl_get(portid, &fc_conf);
 			if (ret != 0)
-                                TRACE_INFO("Failed to get flow control info!\n");
+                                TRACE_LOG("Failed to get flow control info!\n");
 
 			/* and just disable the rx/tx flow control */
 			fc_conf.mode = RTE_ETH_FC_NONE;
 			ret = rte_eth_dev_flow_ctrl_set(portid, &fc_conf);
                         if (ret != 0)
-                                TRACE_INFO("Failed to set flow control info!: errno: %d\n",
+                                TRACE_LOG("Failed to set flow control info!: errno: %d\n",
                                          ret);
 
 #ifdef DEBUG

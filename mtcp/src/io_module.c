@@ -1,6 +1,6 @@
 /*
  * Modifications to this original mTCP code:
- * Copyright 2022-2023 NXP
+ * Copyright 2022-2024 NXP
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -328,7 +328,7 @@ SetNetEnv(char *dev_name_list, char *port_stat_list, char *port_eal_param)
 		}
 		token = strtok_r(token, ",\n\r" , &end_str);
 		while (token != NULL) {
-			token = strtok_r(token, ":", &end_str2);
+			token = strtok_r(token, "@", &end_str2);
 			strcpy(CONFIG.eths[i].dev_name, token);
 			ret = rte_eth_dev_get_port_by_name(CONFIG.eths[i].dev_name, &port_id);
 			if (ret != 0) {
