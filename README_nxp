@@ -51,16 +51,15 @@ make -C apps/perf
 Sample Compilation setup
 ########################
 
-export RTE_SDK=/home/dpdk/dpdk_temp/dpdk_temp/dpdk
+export RTE_SDK=/home/dpdk
 export CFLAGS="-Wno-error -I/home/dpdk/dpdk_temp/dpdk_temp/gmp-6.2.1/gmp/include -I/home/dpdk/dpdk_temp/dpdk_temp/numactl/install/include"
 export LDFLAGS="-L/home/dpdk/dpdk_temp/dpdk_temp/gmp-6.2.1/gmp/lib -L/home/dpdk/dpdk_temp/dpdk_temp/numactl/install/lib"
-export CC=/home/toolchain/gcc-linaro-7.5.0-2019.12-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-gcc 
-
+export CC=/home/toolchain/arm-gnu-toolchain-13.3.rel1-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-gcc
 ./configure --host=aarch64-linux-gnu --with-dpdk-lib=$RTE_SDK/install
 make setup-dpdk
 make
 
-*********************************
+
 Application running steps:
 -------------------------
 
@@ -75,23 +74,33 @@ DPAA Setup:
 	* Create a back-to-back setup of two DPAA boards.
 	* Execute the fmc script files. please refer DPDK documentation for FMC commands.
 
+i.MX95 Setup:
+-------------
+	* Take 2 i.MX95 boards, connect ports of both boards with each other (back to back).
+	* Please refer the DPDK nxp/README sections mention below to prepare the i.MX95
+	  boards.
+		- 'Generic steps on i.MX95 before running dpdk'.
+		- 'Running VFs in DPDK' to create VF.
+
 1. "client" Application:
 
   Application measures read and write throughput for particular number of seconds.
 
-  - Running steps (DPAA and DPAA2):
+  - Running steps (DPAA,DPAA2 and i.MX95):
 
 	* Take the "client" application, client.conf, sample_route.conf, sample_arp.conf to the both boards.
 	* Rename the sample files to route.conf and arp.conf.
+	* Copy route.conf and arp.conf to the "./config" directory.
 	* Update route and arp entries as per the IPs and MAC address of the interfaces.
 	  Note: User will get to know about port MAC address and IP address (if not given
 		in config file) on application run. so first execute the application,
 		get the IP addresses and MAC addresses and fill the route and arp config and
 		re-run the application.
-	* Copy route.conf and arp.conf to the "./config" directory.
 	* Update client.conf with required details and correct port names to be used for
 	  traffic and port names must be comma(,) separated.
-		ie. dpni.* in case of DPAA2 and fm1-mac* in case of DPAA1.
+		ie. <dpni.*> in case of DPAA2;
+		    <fm*-mac*> in case of DPAA1;
+		    <pci address format(eg. 0000.00.10.0)> in case of i.MX95
 
 	  Please refer section "MTCP configuration Section" in this README for more deatils.
 
@@ -102,8 +111,25 @@ DPAA Setup:
 		#. ./client wait <destination IP> <port> <time in seconds>
 
 	whereas:
-		<destination IP>: IP address of neighbour
 		<port>: Any TCP port number
+		For client send- <destination IP>: IP address of neighbour
+		For client wait- <destination IP>: destination IP of client send.
+	Example:
+		Let take two boards i.MX95_1 & i.MX95_2.
+		i.MX95_1 port(0000:00:12.0) IP is 16.0.0.80 and MAC is 00:04:9F:08:9A:AB
+		i.MX95_2 port(0002:00:12.0) IP is 16.0.0.90 and MAC is 00:04:9F:08:DA:61
+
+		Update arp entries in config/arp.conf file:
+		i.MX95_1: 16.0.0.90/32 00:04:9F:08:DA:61
+		i.MX95_2: 16.0.0.80/32 00:04:9F:08:9A:AB
+
+		Update route entries in config/route.conf file:
+		i.MX95_1: 16.0.0.90/0 0000:00:12.0
+		i.MX95_2: 16.0.0.80/0 0002:00:12.0
+
+		Run client application:
+		i.MX95_1: ./client send 16.0.0.90 1025 10
+		i.MX95_2: ./client wait 16.0.0.90 1025 10
 
   Note: Application can run only on 1 core.
 
@@ -115,63 +141,90 @@ DPAA Setup:
 	* Take the "epwget" application and "epwget.conf" to the second board.
 	* Take sample_route.conf, sample_arp.conf to the both boards.
 	* Rename the sample files to route.conf and arp.conf.
+	* Copy route.conf and arp.conf to the "./config" directory.
 	* Update route and arp entries as per the IPs and MAC address of the interfaces.
 	  Note: User will get to know about port MAC address and IP address (if not given
 		in config file) on application run. so first execute the application,
 		get the IP addresses and MAC addresses and fill the route and arp config
 		and re-run the application.
-	* Copy route.conf and arp.conf to the "./config" directory.
 	* Update epserver.conf and epwget.conf with required details and correct port names
 	  to be used for traffic and port names must be comma(,) separated.
-		ie. dpni.* in case of DPAA2 and fm1-mac* in case of DPAA1.
-		Please refer section "MTCP configuration Section" in this README for more deatils.
+		ie. <dpni.*> in case of DPAA2;
+		    <fm*-mac*> in case of DPAA1;
+		    <pci address format(eg. 0000.00.10.0)> in case of i.MX95.
+	  Please refer section "MTCP configuration Section" in this README for more deatils.
 
-	* Create a random txt file on the server board in the /home/www directory.
-
+	* Create a random txt file(eg: a.txt) on the server board in the /home/www directory.
+	  Create directory 'www' if not exist.
 	* On first board run below command:
 		#. ./epserver -p /home/www -f epserver.conf -N 8
 	* On 2nd board run below command:
-		#. ./epwget <IP/file name> <number of requests> -N 1 -c 8000 -f epwget.conf
-			e.g. ./epwget 10.0.0.112/a.txt 1000000 -N 1 -c 8000 -f epwget.conf
+		#. ./epwget <Server IP/file name> <number of requests> -N 1 -c 8000 -f epwget.conf -o <file name>
+			e.g. ./epwget 10.0.0.112/a.txt 10 -N 1 -c 8000 -f epwget.conf -o b.txt
 
 	Where:
 		-p is path of server home directory where all the files are present.
 		-f is configuration file name.
 		-N is number of cores.
 		-c is number of concurrent connections.
+		-o (Optional)is output file in which content of a.txt receive.
 	Note: epwget can work only on 1 core.
 
 MTCP configuration Section:
 --------------------------
 
-	Please refer "apps/perf/client.conf" sample file for more details on configuration supported by MTCP.
-	Below is the "Port" and "eal_args" parameters description:
+   - Please refer following sample file for more details on configuration supported by MTCP.
+	* For client application: "apps/perf/client.conf"
+	* For epserver application: "apps/example/epserver.conf"
+	* For epwget application: "apps/example/epwget.conf"
 
-	Port: List of port names to be used for traffic. Port names must be comma(,) separated.
-                ie. dpni.* in case of DPAA2 and fm1-mac* in case of DPAA1.
+   - Below is the "Port" "eal_args" and "stat_print" parameters description:
+	* Port: List of port names to be used for traffic. Port names must be comma(,) separated.
+		ie. <dpni.*> in case of DPAA2;
+		    <fm*-mac*> in case of DPAA1;
+		    <pci address format(eg. 0000.00.10.0)> in case of i.MX95.
 
-		e.g. on DPAA1, user want to use only fm1-mac9 and fm1-mac10 ports and in
-		     that case port configuration will be like:
-		     port = fm1-mac9,fm1-mac10
+		example for multiple port configuration:
+		  On DPAA1, when user want to use fm1-mac9 & fm1-mac10 ports and in this case port
+		  configuration will be like:
+			port = fm1-mac9,fm1-mac10
 
-		Note: The "port" config parameter also accept user's given IP address for each
-			port. If IP is not given for port then MTCP stack will generate
-			random IPs.
+		examples for port configuration with IP addresses:
+		  On DPAA1, when user want to use fm1-mac9 & fm1-mac10 ports with IP 192.168.1.1
+		  and netmask value 255.255.255.0 and fm1-mac10 with IP 192.168.2.1 and netmask
+		  value 255.255.255.0.
+			port = fm1-mac9@192.168.1.1/24,fm1-mac10@192.168.2.1/24
 
-		examples port configuration with IP addresses:
-			port = fm1-mac9:192.168.1.1/24,fm1-mac10:192.168.2.1/24
+		Note:
+		  - IP value must be immediate after port name and (@) separated.
+		  - The "port" config parameter also accept user's given IP address for each
+		    port. If IP is not given for port then MTCP stack will generate random IPs.
 
-				MTCP stack will initialize fm1-mac9 with IP 192.168.1.1 and
-				netmask value 255.255.255.0 and fm1-mac10 with IP 192.168.2.1
-				and netmask value 255.255.255.0.
-			IP value must be immediate after port name and colon(:) separated.
 
-	eal_args: List of DPDK EAL library configuration. please refer:
+	* eal_args: List of DPDK EAL library configuration. please refer:
 		  https://doc.dpdk.org/guides/linux_gsg/linux_eal_parameters.html
 		  for detail list of supported parameters.
 
 		  e.g.: eal_args = --log-level=8 -b dpaa_bus:fm1-mac10
 
-		  Parameters must be separated by a space chareacter.
+		  Parameters must be separated by a space character.
 		  Note: please dont use eal_args for core-mask, "num_cores" can be used for
-			number of cores.
+			number of core.
+
+	* stat_print: List of port names to be used for stats. Port names must be 'space' separated.
+		Example to enable stats for single DPDK port:
+		  On DPAA1, when user want to use only fm1-mac9, stat_print configuration will be like:
+			stat_print = fm1-mac9
+		Example to enable stats for multiple DPDK ports:
+		  On DPAA1, when user want to use fm1-mac9 & fm1-mac10 ports, stat_print configuration
+		  will be like:
+			stat_print = fm1-mac9 fm1-mac10
+
+	Note: There are other parameters like-
+	      Number of memory channels: num_mem_ch;
+	      Receive buffer size: rcvbuf;
+	      Send buffer size: sndbuf;
+	      TCP timeout seconds: tcp_timeout;
+	      TCP timewait seconds: tcp_timewait etc
+	      All parameters can be configured as per use case. There description is mentioned in
+	      respective config files-client.conf, epserver.conf & epwget.conf.
