@@ -361,7 +361,7 @@ $(srcdir)/config.h.in:  $(am__configure_deps)
 setup-dpdk:
 ifeq ($(DPDK),1)
 	rm -rf $(DPDKLIBPATH)/lib/libdpdk.a
-	cd $(DPDKLIBPATH)/lib && echo "GROUP ( " > libdpdk.a && (ls librte*.a | grep -Ev '^librte_crypto_ccp.a$$|^librte_common_qat.a$$|^librte_crypto_openssl.a$$') >> libdpdk.a && echo " )" >> libdpdk.a
+	cd $(DPDKLIBPATH)/lib && echo "GROUP ( " > libdpdk.a && (ls librte*.a | grep -Ev '^librte_crypto_ccp.a$$|^librte_common_qat.a$$|^librte_crypto_openssl.a$$|^librte_net_pcap.a$$|^librte_port.a$$|^librte_pipeline.a$$') >> libdpdk.a && echo " )" >> libdpdk.a
 endif
 
 distclean-hdr:
