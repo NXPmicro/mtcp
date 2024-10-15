@@ -273,6 +273,7 @@ am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
 am__tar = @am__tar@
 am__untar = @am__untar@
+baselib = @baselib@
 bindir = @bindir@
 build_alias = @build_alias@
 builddir = @builddir@
@@ -360,8 +361,8 @@ $(srcdir)/config.h.in:  $(am__configure_deps)
 
 setup-dpdk:
 ifeq ($(DPDK),1)
-	rm -rf $(DPDKLIBPATH)/lib/libdpdk.a
-	cd $(DPDKLIBPATH)/lib && echo "GROUP ( " > libdpdk.a && (ls librte*.a | grep -Ev '^librte_crypto_ccp.a$$|^librte_common_qat.a$$|^librte_crypto_openssl.a$$|^librte_net_pcap.a$$|^librte_port.a$$|^librte_pipeline.a$$') >> libdpdk.a && echo " )" >> libdpdk.a
+	rm -rf $(DPDKLIBPATH)/$(baselib)/libdpdk.a
+	cd $(DPDKLIBPATH)/$(baselib) && echo "GROUP ( " > libdpdk.a && (ls librte*.a | grep -Ev '^librte_crypto_ccp.a$$|^librte_common_qat.a$$|^librte_crypto_openssl.a$$|^librte_net_pcap.a$$|^librte_port.a$$|^librte_pipeline.a$$') >> libdpdk.a && echo " )" >> libdpdk.a
 endif
 
 distclean-hdr:

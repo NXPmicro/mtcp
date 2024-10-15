@@ -700,6 +700,7 @@ ECHO_C
 DEFS
 mandir
 localedir
+baselib
 libdir
 psdir
 pdfdir
@@ -797,7 +798,7 @@ htmldir='${docdir}'
 dvidir='${docdir}'
 pdfdir='${docdir}'
 psdir='${docdir}'
-libdir='${exec_prefix}/lib'
+libdir='${exec_prefix}/${baselib}'
 localedir='${datarootdir}/locale'
 mandir='${datarootdir}/man'
 
@@ -940,6 +941,11 @@ do
     ac_prev=infodir ;;
   -infodir=* | --infodir=* | --infodi=* | --infod=* | --info=* | --inf=*)
     infodir=$ac_optarg ;;
+
+  -baselib | --baselib | --baseli | --basel)
+    ac_prev=baselib ;;
+  -baselib=* | --baselib=* | --baseli=* | --basel=*)
+    baselib=$ac_optarg ;;
 
   -libdir | --libdir | --libdi | --libd)
     ac_prev=libdir ;;
@@ -1341,6 +1347,7 @@ Fine tuning of the installation directories:
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
   --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
+  --baselib=DIR           used to switch from /lib to /lib64 with multilib configuration
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
