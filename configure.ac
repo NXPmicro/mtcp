@@ -156,7 +156,7 @@ fi
 if test "x$enable_ccp" = "xyes"
 then
 	AC_CHECK_LIB(startccp, libstartccp_run_forever, [echo "Found CCP library"], [
-		AC_MSG_ERROR(CCP library is missing. Please see README.md for instructions.)
+		AC_MSG_ERROR(CCP library is missing. Please see README for instructions.)
 	])
 fi
 
