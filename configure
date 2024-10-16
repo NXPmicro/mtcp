@@ -798,6 +798,7 @@ htmldir='${docdir}'
 dvidir='${docdir}'
 pdfdir='${docdir}'
 psdir='${docdir}'
+baselib=${baselib:='lib'}
 libdir='${exec_prefix}/${baselib}'
 localedir='${datarootdir}/locale'
 mandir='${datarootdir}/man'
